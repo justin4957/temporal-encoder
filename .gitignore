@@ -1,0 +1,39 @@
+# The directory Mix will write compiled artifacts to.
+/_build/
+
+# If you run "mix test --cover", coverage assets end up here.
+/cover/
+
+# The directory Mix downloads your dependencies sources to.
+/deps/
+
+# Where third-party dependencies like ExDoc output generated docs.
+/doc/
+
+# Ignore .fetch files in case you like to edit your project deps locally.
+/.fetch
+
+# If the VM crashes, it generates a dump, let's ignore it too.
+erl_crash.dump
+
+# Also ignore archive artifacts (built via "mix archive.build").
+*.ez
+
+# Ignore package tarball (built via "mix hex.build").
+temporal_encoder-*.tar
+
+# Temporary files, backups, and test scripts
+*.tmp
+*.swp
+*~
+.DS_Store
+
+# Test scripts
+test_*.exs
+debug_*.exs
+trace_*.exs
+full_test.exs
+print_array.exs
+detailed_debug.exs
+api_timing_demo.exs
+verify_*.exs
