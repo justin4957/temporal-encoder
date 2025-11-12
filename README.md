@@ -307,6 +307,8 @@ Advantages:
 
 ### 🎵 Music Encoding
 
+![](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmM0Mzk0bXp0OXljdHlpN3MyYWhtam83MXI0Nm5mMDAwZ3h3Nno3YiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/QMQ4zUAVD8siA/giphy.gif)
+
 Encode messages into musical structures using MIDI:
 
 #### Multi-Layer Musical Steganography
