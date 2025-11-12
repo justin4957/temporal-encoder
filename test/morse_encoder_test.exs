@@ -4,19 +4,19 @@ defmodule TemporalEncoder.MorseEncoderTest do
 
   describe "encode/1" do
     test "encodes simple letters" do
-      assert {:ok, "..."} = MorseEncoder.encode("S")
-      assert {:ok, "---"} = MorseEncoder.encode("O")
-      assert {:ok, ".-"} = MorseEncoder.encode("A")
+      assert {:ok, ["..."]} = MorseEncoder.encode("S")
+      assert {:ok, ["---"]} = MorseEncoder.encode("O")
+      assert {:ok, [".-"]} = MorseEncoder.encode("A")
     end
 
     test "encodes words" do
       {:ok, morse} = MorseEncoder.encode("SOS")
-      assert morse == "... --- ..."
+      assert morse == ["...", "---", "..."]
     end
 
     test "encodes sentences with spaces" do
       {:ok, morse} = MorseEncoder.encode("HI MOM")
-      assert String.contains?(morse, "/")
+      assert "/" in morse
     end
 
     test "handles lowercase" do
@@ -27,13 +27,13 @@ defmodule TemporalEncoder.MorseEncoderTest do
 
     test "encodes numbers" do
       {:ok, morse} = MorseEncoder.encode("123")
-      assert is_binary(morse)
-      assert String.length(morse) > 0
+      assert is_list(morse)
+      assert length(morse) > 0
     end
 
     test "encodes punctuation" do
       {:ok, morse} = MorseEncoder.encode("HELLO.")
-      assert is_binary(morse)
+      assert is_list(morse)
     end
 
     test "returns error for unsupported characters" do
@@ -43,23 +43,23 @@ defmodule TemporalEncoder.MorseEncoderTest do
 
   describe "decode/1" do
     test "decodes simple morse code" do
-      assert {:ok, "SOS"} = MorseEncoder.decode("... --- ...")
-      assert {:ok, "A"} = MorseEncoder.decode(".-")
-      assert {:ok, "E"} = MorseEncoder.decode(".")
+      assert {:ok, "SOS"} = MorseEncoder.decode(["...", "---", "..."])
+      assert {:ok, "A"} = MorseEncoder.decode([".-"])
+      assert {:ok, "E"} = MorseEncoder.decode(["."])
     end
 
     test "decodes words" do
-      {:ok, text} = MorseEncoder.decode(".... . .-.. .-.. ---")
+      {:ok, text} = MorseEncoder.decode(["....", ".", ".-..", ".-..", "---"])
       assert text == "HELLO"
     end
 
     test "decodes sentences" do
-      {:ok, text} = MorseEncoder.decode(".... .. / -- --- --")
+      {:ok, text} = MorseEncoder.decode(["....", "..", "/", "--", "---", "--"])
       assert text == "HI MOM"
     end
 
     test "returns error for invalid morse code" do
-      assert {:error, _} = MorseEncoder.decode("......")
+      assert {:error, _} = MorseEncoder.decode(["......"])
     end
   end
 

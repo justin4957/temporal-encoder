@@ -75,11 +75,12 @@ defmodule TemporalEncoder.Scheduler do
       end)
     end)
 
-    {:ok, %{
-      scheduled: length(relative_timestamps),
-      start_time: start_time,
-      end_time: DateTime.add(start_time, List.last(relative_timestamps) || 0, :millisecond)
-    }}
+    {:ok,
+     %{
+       scheduled: length(relative_timestamps),
+       start_time: start_time,
+       end_time: DateTime.add(start_time, List.last(relative_timestamps) || 0, :millisecond)
+     }}
   end
 
   @doc """
@@ -110,21 +111,25 @@ defmodule TemporalEncoder.Scheduler do
         ]
 
         # Merge metadata into body if JSON
-        final_body = case Jason.encode(Map.merge(metadata, %{
-          signal_time: DateTime.to_iso8601(actual_time),
-          offset_ms: timestamp_ms
-        })) do
-          {:ok, json} -> json
-          _ -> body
-        end
+        final_body =
+          case Jason.encode(
+                 Map.merge(metadata, %{
+                   signal_time: DateTime.to_iso8601(actual_time),
+                   offset_ms: timestamp_ms
+                 })
+               ) do
+            {:ok, json} -> json
+            _ -> body
+          end
 
-        result = case method do
-          :get -> HTTPoison.get(url, timing_headers)
-          :post -> HTTPoison.post(url, final_body, timing_headers)
-          :put -> HTTPoison.put(url, final_body, timing_headers)
-          :delete -> HTTPoison.delete(url, timing_headers)
-          _ -> {:error, "Unsupported HTTP method: #{method}"}
-        end
+        result =
+          case method do
+            :get -> HTTPoison.get(url, timing_headers)
+            :post -> HTTPoison.post(url, final_body, timing_headers)
+            :put -> HTTPoison.put(url, final_body, timing_headers)
+            :delete -> HTTPoison.delete(url, timing_headers)
+            _ -> {:error, "Unsupported HTTP method: #{method}"}
+          end
 
         case result do
           {:ok, response} ->
@@ -138,13 +143,14 @@ defmodule TemporalEncoder.Scheduler do
       end)
     end)
 
-    {:ok, %{
-      scheduled: length(relative_timestamps),
-      start_time: start_time,
-      end_time: DateTime.add(start_time, List.last(relative_timestamps) || 0, :millisecond),
-      url: url,
-      method: method
-    }}
+    {:ok,
+     %{
+       scheduled: length(relative_timestamps),
+       start_time: start_time,
+       end_time: DateTime.add(start_time, List.last(relative_timestamps) || 0, :millisecond),
+       url: url,
+       method: method
+     }}
   end
 
   @doc """
@@ -167,7 +173,8 @@ defmodule TemporalEncoder.Scheduler do
         await_signals(remaining - 1, [{timestamp_ms, status} | results], timeout)
     after
       timeout ->
-        {:error, "Timeout waiting for signals. Received #{length(results)}, expected #{remaining + length(results)}"}
+        {:error,
+         "Timeout waiting for signals. Received #{length(results)}, expected #{remaining + length(results)}"}
     end
   end
 end

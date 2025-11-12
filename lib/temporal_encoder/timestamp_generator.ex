@@ -37,15 +37,16 @@ defmodule TemporalEncoder.TimestampGenerator do
 
     relative_timestamps = generate_relative_timestamps(morse_code, base_unit_ms)
 
-    timestamps = case format do
-      :relative ->
-        relative_timestamps
+    timestamps =
+      case format do
+        :relative ->
+          relative_timestamps
 
-      :absolute ->
-        Enum.map(relative_timestamps, fn offset_ms ->
-          DateTime.add(start_time, offset_ms, :millisecond)
-        end)
-    end
+        :absolute ->
+          Enum.map(relative_timestamps, fn offset_ms ->
+            DateTime.add(start_time, offset_ms, :millisecond)
+          end)
+      end
 
     {:ok, timestamps}
   end
@@ -61,43 +62,50 @@ defmodule TemporalEncoder.TimestampGenerator do
   - 3 units gap (no timestamp) = letter boundary
   - 6 units gap (no timestamp) = word boundary
   """
-  def generate_relative_timestamps(morse_patterns, base_unit_ms \\ @default_base_unit_ms) when is_list(morse_patterns) do
-    {_, timestamps_rev} = morse_patterns
-    |> Enum.with_index()
-    |> Enum.reduce({0, []}, fn {pattern, idx}, {current_time, acc} ->
-      case pattern do
-        "/" ->
-          # Word boundary: advance 6 units without emitting timestamp
-          {current_time + (6 * base_unit_ms), acc}
+  def generate_relative_timestamps(morse_patterns, base_unit_ms \\ @default_base_unit_ms)
+      when is_list(morse_patterns) do
+    {final_time, timestamps_rev} =
+      morse_patterns
+      |> Enum.with_index()
+      |> Enum.reduce({0, []}, fn {pattern, idx}, {current_time, acc} ->
+        case pattern do
+          "/" ->
+            # Word boundary: advance 6 units without emitting timestamp
+            {current_time + 6 * base_unit_ms, acc}
 
-        letter_morse ->
-          # Process each dot/dash in the letter
-          {new_time, new_acc} = letter_morse
-          |> String.graphemes()
-          |> Enum.reduce({current_time, acc}, fn char, {time, timestamps} ->
-            case char do
-              "." ->
-                # Dit: emit timestamp, advance 2 units
-                {time + (2 * base_unit_ms), [time | timestamps]}
+          letter_morse ->
+            # Process each dot/dash in the letter
+            {new_time, new_acc} =
+              letter_morse
+              |> String.graphemes()
+              |> Enum.reduce({current_time, acc}, fn char, {time, timestamps} ->
+                case char do
+                  "." ->
+                    # Dit: emit timestamp, advance 2 units
+                    {time + 2 * base_unit_ms, [time | timestamps]}
 
-              "-" ->
-                # Dah: emit timestamp, advance 4 units
-                {time + (4 * base_unit_ms), [time | timestamps]}
+                  "-" ->
+                    # Dah: emit timestamp, advance 4 units
+                    {time + 4 * base_unit_ms, [time | timestamps]}
 
-              _ ->
-                {time, timestamps}
-            end
-          end)
+                  _ ->
+                    {time, timestamps}
+                end
+              end)
 
-          # Add 3-unit letter boundary gap ONLY if next pattern is not "/"
-          next_pattern = Enum.at(morse_patterns, idx + 1)
-          gap = if next_pattern == "/", do: 0, else: 3 * base_unit_ms
+            # Add 3-unit letter boundary gap ONLY if next pattern is not "/"
+            next_pattern = Enum.at(morse_patterns, idx + 1)
+            gap = if next_pattern == "/", do: 0, else: 3 * base_unit_ms
 
-          {new_time + gap, new_acc}
-      end
-    end)
+            {new_time + gap, new_acc}
+        end
+      end)
 
-    Enum.reverse(timestamps_rev)
+    # Add final timestamp to mark the end of the last signal
+    # This allows the decoder to determine what the last signal was
+    timestamps_with_end = [final_time | timestamps_rev]
+
+    Enum.reverse(timestamps_with_end)
   end
 
   # Fallback for string input (convert to patterns first)
@@ -150,7 +158,7 @@ defmodule TemporalEncoder.TimestampGenerator do
       dah_count: dah_count,
       letter_gaps: letter_gaps,
       word_gaps: word_gaps,
-      duration_ms: (if signal_count > 0, do: List.last(timestamps), else: 0),
+      duration_ms: if(signal_count > 0, do: List.last(timestamps), else: 0),
       base_unit_ms: base_unit_ms,
       timestamps: timestamps
     }

@@ -9,7 +9,8 @@ defmodule TemporalEncoder.Decoder do
   alias TemporalEncoder.MorseEncoder
 
   @default_base_unit_ms 200
-  @tolerance 0.3  # 30% tolerance for timing variations
+  # 30% tolerance for timing variations
+  @tolerance 0.3
 
   @doc """
   Decodes timestamps back to original text.
@@ -50,9 +51,11 @@ defmodule TemporalEncoder.Decoder do
   def normalize_to_relative(timestamps) do
     case List.first(timestamps) do
       %DateTime{} = first ->
-        relative = Enum.map(timestamps, fn dt ->
-          DateTime.diff(dt, first, :millisecond)
-        end)
+        relative =
+          Enum.map(timestamps, fn dt ->
+            DateTime.diff(dt, first, :millisecond)
+          end)
+
         {:ok, relative}
 
       n when is_integer(n) ->
@@ -81,6 +84,7 @@ defmodule TemporalEncoder.Decoder do
     case robust_detect(intervals) do
       unit when is_integer(unit) and unit > 0 ->
         {:ok, unit}
+
       _ ->
         {:error, "Could not detect base unit"}
     end
@@ -106,6 +110,7 @@ defmodule TemporalEncoder.Decoder do
     else
       # Fallback: try GCD approach with rounding
       gcd_based_unit = gcd_detect(intervals)
+
       if gcd_based_unit > 0 and validate_unit(intervals, gcd_based_unit) do
         gcd_based_unit
       else
@@ -124,18 +129,20 @@ defmodule TemporalEncoder.Decoder do
 
   # Validate that a proposed base unit makes sense
   defp validate_unit(intervals, base_unit) do
-    tolerance = 0.3  # 30% tolerance
+    # 30% tolerance
+    tolerance = 0.3
 
     # Count how many intervals are close to expected multiples (2, 3, 4, 8 units)
     expected_multiples = [2, 3, 4, 6, 7, 8]
 
-    matches = Enum.count(intervals, fn interval ->
-      Enum.any?(expected_multiples, fn mult ->
-        expected = mult * base_unit
-        tolerance_amount = expected * tolerance
-        abs(interval - expected) <= tolerance_amount
+    matches =
+      Enum.count(intervals, fn interval ->
+        Enum.any?(expected_multiples, fn mult ->
+          expected = mult * base_unit
+          tolerance_amount = expected * tolerance
+          abs(interval - expected) <= tolerance_amount
+        end)
       end)
-    end)
 
     # At least 70% of intervals should match expected patterns
     matches / length(intervals) >= 0.7
@@ -180,27 +187,35 @@ defmodule TemporalEncoder.Decoder do
         intervals = calculate_intervals(relative_timestamps)
 
         # Decode each interval - returns list of symbols (signal + optional boundary)
-        symbols_lists = Enum.map(intervals, fn interval ->
-          decode_interval(interval, base_unit_ms)
-        end)
-
-        # Add the last symbol (infer from previous)
-        last_symbols = infer_last_symbol(List.last(intervals), base_unit_ms)
+        # Each interval tells us what the PREVIOUS timestamp represented
+        # The last timestamp doesn't represent a signal itself - it just marks
+        # the end point of the previous signal, allowing us to calculate its duration
+        symbols_lists =
+          Enum.map(intervals, fn interval ->
+            decode_interval(interval, base_unit_ms)
+          end)
 
         # Flatten all symbols into a single list
-        all_symbols = (symbols_lists ++ [last_symbols])
-        |> List.flatten()
+        # Note: We do NOT add a symbol for the last timestamp, as it's just
+        # a timing marker for the previous signal
+        all_symbols =
+          symbols_lists
+          |> List.flatten()
 
         # Build morse pattern list: split by boundaries into letters and words
-        morse_patterns = all_symbols
-        |> Enum.chunk_by(fn s -> s in ["|", "/"] end)
-        |> Enum.flat_map(fn chunk ->
-          cond do
-            chunk == ["|"] -> []  # Skip letter boundaries
-            chunk == ["/"] -> ["/"]  # Keep word boundaries
-            true -> [Enum.join(chunk, "")]  # Group dots/dashes into letter
-          end
-        end)
+        morse_patterns =
+          all_symbols
+          |> Enum.chunk_by(fn s -> s in ["|", "/"] end)
+          |> Enum.flat_map(fn chunk ->
+            cond do
+              # Skip letter boundaries
+              chunk == ["|"] -> []
+              # Keep word boundaries
+              chunk == ["/"] -> ["/"]
+              # Group dots/dashes into letter
+              true -> [Enum.join(chunk, "")]
+            end
+          end)
 
         {:ok, morse_patterns}
     end
@@ -211,56 +226,128 @@ defmodule TemporalEncoder.Decoder do
   defp decode_interval(interval, base_unit_ms) do
     units = interval / base_unit_ms
 
-    result = cond do
-      # Check combined intervals first (with tighter tolerances)
-      # 10 units = dah + word boundary
-      abs(units - 10.0) < 0.8 -> ["-", "/"]
-      # 8 units = dit + word boundary
-      abs(units - 8.0) < 0.8 -> [".", "/"]
-      # 7 units = dah + letter boundary
-      abs(units - 7.0) < 0.8 -> ["-", "|"]
-      # 5 units = dit + letter boundary
-      abs(units - 5.0) < 0.8 -> [".", "|"]
+    result =
+      cond do
+        # Check combined intervals first (with tighter tolerances)
+        # 10 units = dah + word boundary
+        abs(units - 10.0) < 0.8 ->
+          ["-", "/"]
 
-      # Then check simple intervals
-      # 6 units = word boundary only
-      abs(units - 6.0) < 1.0 -> ["/"]
-      # 4 units = dah
-      abs(units - 4.0) < 0.8 -> ["-"]
-      # 3 units = letter boundary only
-      abs(units - 3.0) < 0.8 -> ["|"]
-      # 2 units = dit
-      abs(units - 2.0) < 0.8 -> ["."]
+        # 8 units = dit + word boundary
+        abs(units - 8.0) < 0.8 ->
+          [".", "/"]
 
-      # Default: choose closest
-      true ->
-        targets = [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0]
-        closest = Enum.min_by(targets, fn target -> abs(units - target) end)
-        case closest do
-          2.0 -> ["."]
-          3.0 -> ["|"]
-          4.0 -> ["-"]
-          5.0 -> [".", "|"]
-          6.0 -> ["/"]
-          7.0 -> ["-", "|"]
-          8.0 -> [".", "/"]
-          10.0 -> ["-", "/"]
-        end
-    end
+        # 7 units = dah + letter boundary
+        abs(units - 7.0) < 0.8 ->
+          ["-", "|"]
+
+        # 5 units = dit + letter boundary
+        abs(units - 5.0) < 0.8 ->
+          [".", "|"]
+
+        # Then check simple intervals
+        # 6 units = word boundary only
+        abs(units - 6.0) < 1.0 ->
+          ["/"]
+
+        # 4 units = dah
+        abs(units - 4.0) < 0.8 ->
+          ["-"]
+
+        # 3 units = letter boundary only
+        abs(units - 3.0) < 0.8 ->
+          ["|"]
+
+        # 2 units = dit
+        abs(units - 2.0) < 0.8 ->
+          ["."]
+
+        # Default: choose closest
+        true ->
+          targets = [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0]
+          closest = Enum.min_by(targets, fn target -> abs(units - target) end)
+
+          case closest do
+            2.0 -> ["."]
+            3.0 -> ["|"]
+            4.0 -> ["-"]
+            5.0 -> [".", "|"]
+            6.0 -> ["/"]
+            7.0 -> ["-", "|"]
+            8.0 -> [".", "/"]
+            10.0 -> ["-", "/"]
+          end
+      end
 
     result
   end
 
-  # Infer what the last timestamp represents (same as previous)
+  # Infer what the last timestamp represents
+  # The last timestamp has no interval after it to decode, so we need to infer
+  # what signal it was. Since there's no boundary marker after it (by definition,
+  # it's the last signal), we can look at the pattern from the previous interval.
+  # The previous interval tells us what the second-to-last timestamp was.
+  # The last timestamp itself should be inferred as the same type of signal
+  # as indicated by the previous interval's signal component.
   defp infer_last_symbol(last_interval, base_unit_ms) do
-    decode_interval(last_interval, base_unit_ms)
+    units = last_interval / base_unit_ms
+
+    # Extract just the signal part from the last interval
+    # (ignoring any boundary that was already processed)
+    cond do
+      # Combined intervals with dah
+      # dah + word boundary
+      # dah + letter boundary
+      abs(units - 10.0) < 0.8 or
+          abs(units - 7.0) < 0.8 ->
+        ["-"]
+
+      # Combined intervals with dit
+      # dit + word boundary
+      # dit + letter boundary
+      abs(units - 8.0) < 0.8 or
+          abs(units - 5.0) < 0.8 ->
+        ["."]
+
+      # Simple signal intervals - last timestamp is same type
+      # dah
+      abs(units - 4.0) < 0.8 ->
+        ["-"]
+
+      # dit
+      abs(units - 2.0) < 0.8 ->
+        ["."]
+
+      # Boundary-only intervals - can't infer, assume dit
+      # word boundary only
+      # letter boundary only
+      abs(units - 6.0) < 1.0 or
+          abs(units - 3.0) < 0.8 ->
+        ["."]
+
+      # Default: determine based on closest pattern
+      true ->
+        targets = [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0]
+        closest = Enum.min_by(targets, fn target -> abs(units - target) end)
+
+        case closest do
+          10.0 -> ["-"]
+          8.0 -> ["."]
+          7.0 -> ["-"]
+          5.0 -> ["."]
+          4.0 -> ["-"]
+          _ -> ["."]
+        end
+    end
   end
 
   # Clean up morse code spacing
   defp normalize_morse_spacing(morse) do
     morse
-    |> String.replace(~r/\s+/, " ")  # Collapse multiple spaces
-    |> String.replace(" / ", " / ")   # Ensure proper word separator format
+    # Collapse multiple spaces
+    |> String.replace(~r/\s+/, " ")
+    # Ensure proper word separator format
+    |> String.replace(" / ", " / ")
     |> String.trim()
   end
 
@@ -274,7 +361,6 @@ defmodule TemporalEncoder.Decoder do
 
     with {:ok, relative_ms} <- normalize_to_relative(timestamps),
          {:ok, detected_unit} <- detect_base_unit(relative_ms) do
-
       intervals = calculate_intervals(relative_ms)
       interval_units = Enum.map(intervals, fn i -> round(i / detected_unit) end)
 

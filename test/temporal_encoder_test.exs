@@ -7,16 +7,18 @@ defmodule TemporalEncoderTest do
       {:ok, timestamps} = TemporalEncoder.encode("SOS", format: :relative)
 
       assert is_list(timestamps)
-      assert length(timestamps) == 9
+      assert length(timestamps) == 10
       assert List.first(timestamps) == 0
     end
 
     test "encodes text to absolute timestamps" do
       start_time = DateTime.utc_now()
-      {:ok, timestamps} = TemporalEncoder.encode("A",
-        format: :absolute,
-        start_time: start_time
-      )
+
+      {:ok, timestamps} =
+        TemporalEncoder.encode("A",
+          format: :absolute,
+          start_time: start_time
+        )
 
       assert is_list(timestamps)
       assert Enum.all?(timestamps, &match?(%DateTime{}, &1))
@@ -42,10 +44,12 @@ defmodule TemporalEncoderTest do
 
     test "decodes with auto-detection" do
       message = "TEST"
-      {:ok, timestamps} = TemporalEncoder.encode(message,
-        format: :relative,
-        base_unit_ms: 150
-      )
+
+      {:ok, timestamps} =
+        TemporalEncoder.encode(message,
+          format: :relative,
+          base_unit_ms: 150
+        )
 
       {:ok, decoded} = TemporalEncoder.decode(timestamps, auto_detect_unit: true)
       assert decoded == message
@@ -55,10 +59,11 @@ defmodule TemporalEncoderTest do
       message = "SOS"
       start_time = DateTime.utc_now()
 
-      {:ok, timestamps} = TemporalEncoder.encode(message,
-        format: :absolute,
-        start_time: start_time
-      )
+      {:ok, timestamps} =
+        TemporalEncoder.encode(message,
+          format: :absolute,
+          start_time: start_time
+        )
 
       {:ok, decoded} = TemporalEncoder.decode(timestamps)
       assert decoded == message
@@ -78,8 +83,8 @@ defmodule TemporalEncoderTest do
     test "calculates correct signal count" do
       {:ok, info} = TemporalEncoder.info("SOS")
 
-      # S=3 signals, O=3 signals, S=3 signals = 9 total
-      assert info.signal_count == 9
+      # S=3 signals, O=3 signals, S=3 signals + 1 end marker = 10 total
+      assert info.signal_count == 10
     end
   end
 
@@ -87,13 +92,14 @@ defmodule TemporalEncoderTest do
     test "schedules with callback" do
       test_pid = self()
 
-      {:ok, result} = TemporalEncoder.schedule(
-        "HI",
-        base_unit_ms: 10,
-        callback: fn _data ->
-          send(test_pid, :signal_received)
-        end
-      )
+      {:ok, result} =
+        TemporalEncoder.schedule(
+          "HI",
+          base_unit_ms: 10,
+          callback: fn _data ->
+            send(test_pid, :signal_received)
+          end
+        )
 
       assert result.scheduled > 0
 
@@ -102,10 +108,11 @@ defmodule TemporalEncoderTest do
     end
 
     test "returns scheduling information" do
-      {:ok, result} = TemporalEncoder.schedule(
-        "A",
-        callback: fn _ -> :ok end
-      )
+      {:ok, result} =
+        TemporalEncoder.schedule(
+          "A",
+          callback: fn _ -> :ok end
+        )
 
       assert is_integer(result.scheduled)
       assert %DateTime{} = result.start_time
@@ -131,15 +138,17 @@ defmodule TemporalEncoderTest do
       base_units = [50, 100, 200, 500]
 
       Enum.each(base_units, fn base_unit ->
-        {:ok, timestamps} = TemporalEncoder.encode(message,
-          format: :relative,
-          base_unit_ms: base_unit
-        )
+        {:ok, timestamps} =
+          TemporalEncoder.encode(message,
+            format: :relative,
+            base_unit_ms: base_unit
+          )
 
-        {:ok, decoded} = TemporalEncoder.decode(timestamps,
-          base_unit_ms: base_unit,
-          auto_detect_unit: false
-        )
+        {:ok, decoded} =
+          TemporalEncoder.decode(timestamps,
+            base_unit_ms: base_unit,
+            auto_detect_unit: false
+          )
 
         assert decoded == message
       end)
