@@ -1,6 +1,6 @@
 # Temporal Encoder
 
-<img width="496" height="757" alt="Screenshot 2025-11-12 at 7 23 20 AM" src="https://github.com/user-attachments/assets/5ff39a4f-1bad-4563-9b89-4ae13e335e36" />
+<img width="567" height="734" alt="Screenshot 2025-11-12 at 8 31 56 AM" src="https://github.com/user-attachments/assets/f31cb65b-be03-4514-b145-17d2710f8af8" />
 
 
 A demonstration application exploring novel communication methods through temporal patterns. This project encodes text messages into precisely-timed events, where information is carried entirely in the temporal spacing between signals rather than in the signals themselves.
