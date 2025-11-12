@@ -305,6 +305,42 @@ Advantages:
 • Timing variations normal for WebSocket
 ```
 
+### 🎵 Music Encoding
+
+Encode messages into musical structures using MIDI:
+
+#### Multi-Layer Musical Steganography
+```
+Message: "HELLO"
+
+Encoded as MIDI Music:
+Note Sequence: C4 E4 G4 F4 A4 G4 C5 B4...
+    ↑    ↑    ↑    ↑    ↑    ↑
+    H    E    L    L    O    (space)
+
+Encoding Layers:
+┌────────────────────────────────────────────┐
+│ Layer 1 (Pitch): Character-to-note mapping │
+│ Layer 2 (Rhythm): Duration patterns        │
+│ Layer 3 (Velocity): Dynamics variations    │
+│ Layer 4 (Harmony): Chord progressions      │
+└────────────────────────────────────────────┘
+
+Detection Analysis:
+• Pitch Entropy: 2.8 bits (normal: 1.5-3.0)
+• Rhythm Regularity: 0.6 (suspicious if > 0.7)
+• Interval Distribution: Natural-looking
+• Overall Suspicion: 0.45 (Medium)
+```
+
+Features:
+- **Pitch Encoding**: Maps characters to musical notes
+- **Rhythm Encoding**: Binary data in note durations
+- **Interval Encoding**: Melodic intervals carry information
+- **Harmonic Camouflage**: Chords make music sound natural
+- **Forensic Analysis**: Statistical detection methods
+- **Auto-detection**: Identifies encoding mode used
+
 ## Use Cases
 
 This is a **demonstration and exploration project** for:
@@ -357,11 +393,14 @@ mix run examples/basic_usage.exs
 # API timing covert channel
 mix run examples/api_timing_demo.exs
 
-# Steganographic encoding (NEW!)
+# Steganographic encoding
 mix run examples/steganographic_encoding_demo.exs
 
-# Network covert channels (NEW!)
+# Network covert channels
 mix run examples/network_covert_channel_demo.exs
+
+# Music encoding with detection analysis (NEW!)
+mix run examples/music_encoding_demo.exs
 ```
 
 ### Scheduling API Calls
@@ -395,6 +434,42 @@ IO.inspect(info)
 #   morse_code: ".... . .-.. .-.. ---",
 #   ...
 # }
+```
+
+### Music Encoding and Analysis
+
+```elixir
+alias TemporalEncoder.{MusicEncoder, MusicDecoder, MusicAnalyzer}
+
+# Encode a message to MIDI
+{:ok, midi_data} = MusicEncoder.encode("HELLO WORLD",
+  encoding_mode: :multi_layer,  # :pitch, :rhythm, :interval, or :multi_layer
+  add_harmony: true,             # Add chord progressions for naturalness
+  tempo: 120,
+  key: :c_major
+)
+
+# Save to MIDI file
+File.write!("message.mid", midi_data)
+
+# Decode MIDI back to text
+{:ok, decoded_text} = MusicDecoder.decode(midi_data,
+  encoding_mode: :auto_detect,  # Automatically detect encoding method
+  key: :c_major
+)
+
+# Analyze for steganographic content (security research)
+{:ok, analysis} = MusicAnalyzer.analyze_file(midi_data)
+IO.inspect(analysis.overall_suspicion_score)  # 0.0 = natural, 1.0 = suspicious
+IO.inspect(analysis.risk_level)               # :minimal, :low, :medium, :high
+
+# Generate forensic report
+report = MusicAnalyzer.generate_report(analysis)
+IO.puts(report)
+
+# Compare to natural music baseline
+{:ok, comparison} = MusicAnalyzer.compare_to_natural_music(midi_data)
+IO.inspect(comparison.overall_deviation)
 ```
 
 ## Architecture
