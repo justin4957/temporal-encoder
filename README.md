@@ -7,6 +7,10 @@ A demonstration application exploring novel communication methods through tempor
 
 ## Concept
 
+<img width="1299" height="508" alt="Screenshot 2025-11-12 at 7 40 46 AM" src="https://github.com/user-attachments/assets/bba747d4-c245-4f7b-84a1-e9023a499941" />
+
+<img width="1272" height="469" alt="Screenshot 2025-11-12 at 7 41 14 AM" src="https://github.com/user-attachments/assets/5921b8b0-ece2-4f40-aaea-75116481c59e" />
+
 Traditional communication encodes information in the content of signals (bits, symbols, words). Temporal Encoder takes a different approach: **the timing between events carries the message**.
 
 Think of it as a sophisticated evolution of morse code, where:
