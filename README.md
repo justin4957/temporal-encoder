@@ -59,6 +59,7 @@ This is a **demonstration and exploration project** for:
 - **Network Traffic Analysis**: Understanding timing-based communication patterns
 - **Educational**: Teaching information theory and encoding concepts
 - **Research**: Exploring alternative communication channels
+- unrelated: https://github.com/justin4957/logflow-anomaly-detector
 
 ## Installation
 
